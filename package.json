@@ -1,0 +1,38 @@
+{
+  "name": "turnstile-verify-reference",
+  "version": "0.1.0",
+  "description": "Open-source, production-ready reference implementation of Cloudflare Turnstile server-side validation on Workers.",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run test/integration.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "openapi:lint": "redocly lint openapi.yaml"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240502.0",
+    "@redocly/cli": "^1.16.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^3.60.0"
+  },
+  "keywords": [
+    "cloudflare",
+    "turnstile",
+    "siteverify",
+    "workers",
+    "captcha",
+    "bot-protection"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cloudflare/turnstile-verify-reference"
+  }
+}

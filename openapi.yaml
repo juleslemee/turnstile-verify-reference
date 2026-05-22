@@ -1,0 +1,193 @@
+openapi: 3.1.0
+info:
+  title: Magic Turnstile Verify Reference
+  version: 0.1.0
+  description: |
+    Cloudflare Workers-based reference implementation of Turnstile server-side validation.
+    Customers deploy this Worker into their account (via Deploy-to-Cloudflare button or
+    via the Magic Turnstile AI skill) and point their frontend at it.
+
+    Accepts both `application/x-www-form-urlencoded` and `application/json` request bodies.
+    Forwards the token to Cloudflare's siteverify endpoint and returns the response.
+  license:
+    name: MIT
+  contact:
+    name: Magic Turnstile project
+    url: https://github.com/cloudflare/turnstile-verify-reference
+
+servers:
+  - url: https://turnstile-verify-reference.{account}.workers.dev
+    description: After deploy, your Worker lives here.
+    variables:
+      account:
+        default: example
+        description: Your Cloudflare account's workers.dev subdomain.
+
+paths:
+  /:
+    get:
+      summary: Health and version probe
+      responses:
+        '200':
+          description: Worker is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+    post:
+      summary: Verify a Turnstile token
+      description: |
+        Proxies to Cloudflare's siteverify endpoint using the configured
+        `TURNSTILE_SECRET_KEY`. Returns the upstream siteverify JSON augmented
+        with `_worker` metadata (duration, worker version).
+
+        Returns HTTP 200 even when validation fails — callers should check
+        `response.success`, not the HTTP status. This matches Cloudflare's
+        own siteverify API behavior.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteverifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SiteverifyRequest'
+      responses:
+        '200':
+          description: Validation completed (success may still be false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+        '400':
+          description: Malformed request body or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+        '415':
+          description: Unsupported Content-Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+        '500':
+          description: Worker misconfigured (e.g. secret missing) or internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+        '502':
+          description: Upstream siteverify unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+        '504':
+          description: Upstream siteverify timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+  /siteverify:
+    post:
+      summary: Verify a Turnstile token (alias of POST /)
+      description: Provided for compatibility with the reference page at juleslemee.com/turnstile-test.html.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteverifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SiteverifyRequest'
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteverifyResponse'
+
+components:
+  schemas:
+    SiteverifyRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: The Turnstile token from the widget.
+          example: 0x4AAAAAAAExampleToken
+        remoteip:
+          type: string
+          description: Visitor IP. Optional. Falls back to CF-Connecting-IP if omitted.
+        idempotency_key:
+          type: string
+          description: Optional idempotency key for retries. Should be a UUID.
+
+    SiteverifyResponse:
+      type: object
+      required:
+        - success
+        - error-codes
+      properties:
+        success:
+          type: boolean
+          description: True if the token was valid.
+        challenge_ts:
+          type: string
+          format: date-time
+          description: When the challenge was solved.
+        hostname:
+          type: string
+          description: The hostname that served the challenge.
+        action:
+          type: string
+          description: Customer-provided action label, if any.
+        cdata:
+          type: string
+          description: Free-form customer data. Magic Turnstile uses `ai_deployed_v1` to mark AI-deployed sitekeys.
+        error-codes:
+          type: array
+          items:
+            type: string
+            enum:
+              - missing-input-secret
+              - invalid-input-secret
+              - missing-input-response
+              - invalid-input-response
+              - bad-request
+              - timeout-or-duplicate
+              - internal-error
+              - missing-token
+              - invalid-content-type
+              - upstream-unreachable
+              - upstream-timeout
+        _worker:
+          type: object
+          description: Metadata from this Worker. Not from upstream.
+          properties:
+            duration_ms:
+              type: integer
+            worker_version:
+              type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: turnstile-verify-reference
+        version:
+          type: string
+          example: 0.1.0
+        docs:
+          type: string
+          format: uri
