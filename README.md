@@ -1,12 +1,12 @@
-# Magic Turnstile — Reference Worker
+# Turnstile Spin reference Worker
 
 > Open-source, production-ready reference implementation of Cloudflare Turnstile server-side validation, built entirely on Workers.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/juleslemee/turnstile-verify-reference)
 
-This Worker is the canonical "Turnstile siteverify done right" example. It's safe to deploy as-is into any Cloudflare account; the only thing you need to set after deploy is the `TURNSTILE_SECRET_KEY` secret. It powers the **Magic Turnstile** activation experience: customers either click Deploy above to one-click-install it, or have an AI agent install it as part of a wider Turnstile setup. Both paths produce the same correctly-wired result.
+This Worker is the canonical "Turnstile siteverify done right" example. It's safe to deploy as-is into any Cloudflare account; the only thing you need to set after deploy is the `TURNSTILE_SECRET_KEY` secret. It powers the **Turnstile Spin** activation experience: customers either click Deploy above to one-click-install it, or have an AI agent install it as part of a wider Turnstile setup. Both paths produce the same correctly-wired result.
 
-If you just want the widget+verify pattern, this is the smallest correct production example. If you're working on the Magic Turnstile project, see the [mini-PRD](../wit-onboarding/11-magic-turnstile-mini-prd.md) and [functional spec](../wit-onboarding/12-magic-turnstile-fspec.md) for context.
+If you just want the widget+verify pattern, this is the smallest correct production example.
 
 ## What this gives you
 
@@ -21,7 +21,7 @@ If you just want the widget+verify pattern, this is the smallest correct product
 
 ## Quick start
 
-### Option A — Deploy to Cloudflare (one click)
+### Option A: Deploy to Cloudflare (one click)
 
 Click the badge at the top. You'll be guided through:
 
@@ -31,7 +31,7 @@ Click the badge at the top. You'll be guided through:
 
 After it deploys, set `ALLOWED_ORIGIN` to your real customer-facing domain (not `*`) by editing `wrangler.toml` and redeploying. See [Production hardening](#production-hardening) below.
 
-### Option B — Clone + deploy manually
+### Option B: Clone + deploy manually
 
 ```sh
 git clone https://github.com/cloudflare/turnstile-verify-reference
@@ -49,9 +49,9 @@ npx wrangler secret put TURNSTILE_SECRET_KEY
 npm run deploy
 ```
 
-### Option C — Use Magic Turnstile AI skill (recommended for new customers)
+### Option C: Use Turnstile Spin AI skill (recommended for new customers)
 
-If you're starting from a customer site that doesn't yet have Turnstile, install the [Magic Turnstile skill](https://github.com/cloudflare/turnstile-deploy-skill) into your AI agent (Claude Code, OpenCode, Cursor, etc.) and ask it to deploy Turnstile. The skill will scaffold both the frontend widget and a copy of this Worker, parameterized for your domain.
+If you're starting from a customer site that doesn't yet have Turnstile, install the [Cloudflare skills bundle](https://github.com/cloudflare/skills) into your AI agent (Claude Code, OpenCode, Cursor, etc.) and ask it to deploy Turnstile. The Turnstile skill lives at `skills/turnstile/` inside that repo. It will scaffold both the frontend widget and a copy of this Worker, parameterized for your domain.
 
 ## Calling the Worker from your frontend
 
@@ -93,17 +93,22 @@ After the first deploy, do these before pointing real traffic at it:
 | Rotate `TURNSTILE_SECRET_KEY` periodically via `wrangler secret put` | Standard secret hygiene |
 | If your traffic patterns warrant it, add a [Worker rate limit](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) | Defends the Worker itself from abuse |
 
-## The `cdata` convention
+## Telemetry markers
 
-Magic Turnstile uses the `cdata` field on widgets to mark deployments that went through the AI skill or the Deploy-to-Cloudflare button. The convention is:
+Widgets deployed through Turnstile Spin carry two attributes so Cloudflare can measure activation outcomes for AI-assisted deployments separately from manual ones:
 
+```html
+<div
+  class="cf-turnstile"
+  data-sitekey="YOUR_SITEKEY"
+  data-action="turnstile-spin-v1"
+  data-cdata="ai_deployed_v1"
+></div>
 ```
-cdata=ai_deployed_v1
-```
 
-…set in the widget HTML via `data-cdata="ai_deployed_v1"`. When the token is validated, the `cdata` field shows up in the siteverify response and in Cloudflare's internal analytics. This lets us measure how AI-deployed Turnstile compares to manually-deployed Turnstile on metrics like activation rate, siteverify call rate, and customer pain (CUSTESC volume).
+`data-action="turnstile-spin-v1"` is the primary marker. The `action` field is queryable in Turnstile Analytics today. `data-cdata="ai_deployed_v1"` is a forward-compat hedge in case the `cdata` field gains its own analytics column later.
 
-If you're deploying this Worker as part of an AI-driven flow, make sure your frontend widget includes `data-cdata="ai_deployed_v1"`.
+If you deploy this Worker via the Deploy-to-Cloudflare button or the AI skill, both attributes are already in place. If you write your own widget HTML and want your deployment to count, copy both attributes into your widget div.
 
 ## Testing
 
@@ -156,5 +161,5 @@ MIT. See [LICENSE](./LICENSE).
 - [Cloudflare Turnstile docs](https://developers.cloudflare.com/turnstile/)
 - [Server-side validation reference](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)
 - [Deploy buttons for Workers](https://developers.cloudflare.com/workers/platform/deploy-buttons/)
-- [The HTML Rewriter example](https://developers.cloudflare.com/workers/examples/turnstile-html-rewriter/) — frontend-focused companion to this Worker
-- [Pages plugin for Turnstile](https://developers.cloudflare.com/pages/functions/plugins/turnstile/) — if your site is on Pages, use this instead
+- [The HTML Rewriter example](https://developers.cloudflare.com/workers/examples/turnstile-html-rewriter/): frontend-focused companion to this Worker
+- [Pages plugin for Turnstile](https://developers.cloudflare.com/pages/functions/plugins/turnstile/): if your site is on Pages, use this instead
