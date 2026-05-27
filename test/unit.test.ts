@@ -279,6 +279,63 @@ describe('CF-Connecting-IP fallback', () => {
 	});
 });
 
+describe('Hostname-mismatch defense', () => {
+	beforeEach(() => vi.restoreAllMocks());
+	afterEach(() => vi.restoreAllMocks());
+
+	it('rejects success response when hostname does not match EXPECTED_HOSTNAME', async () => {
+		mockFetchOnce({
+			body: { success: true, hostname: 'attacker.com', 'error-codes': [] },
+		});
+		const env: Env = { ...TEST_ENV, EXPECTED_HOSTNAME: 'mysite.com' };
+		const res = await worker.fetch(
+			new Request('https://w/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token: 'abc' }),
+			}),
+			env,
+		);
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as { success: boolean; 'error-codes': string[] };
+		expect(body.success).toBe(false);
+		expect(body['error-codes']).toContain('hostname-mismatch');
+	});
+
+	it('accepts success response when hostname matches EXPECTED_HOSTNAME', async () => {
+		mockFetchOnce({
+			body: { success: true, hostname: 'mysite.com', 'error-codes': [] },
+		});
+		const env: Env = { ...TEST_ENV, EXPECTED_HOSTNAME: 'mysite.com' };
+		const res = await worker.fetch(
+			new Request('https://w/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token: 'abc' }),
+			}),
+			env,
+		);
+		const body = (await res.json()) as { success: boolean };
+		expect(body.success).toBe(true);
+	});
+
+	it('does not apply hostname check when EXPECTED_HOSTNAME is unset', async () => {
+		mockFetchOnce({
+			body: { success: true, hostname: 'anywhere.com', 'error-codes': [] },
+		});
+		const res = await worker.fetch(
+			new Request('https://w/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token: 'abc' }),
+			}),
+			TEST_ENV,
+		);
+		const body = (await res.json()) as { success: boolean };
+		expect(body.success).toBe(true);
+	});
+});
+
 describe('Missing secret', () => {
 	beforeEach(() => vi.restoreAllMocks());
 	afterEach(() => vi.restoreAllMocks());

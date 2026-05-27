@@ -12,6 +12,12 @@ export interface Env {
 	ALLOWED_ORIGIN: string;
 	/** Default cdata to inject if the customer's widget didn't set one. */
 	DEFAULT_CDATA: string;
+	/**
+	 * Optional. If set, the Worker rejects siteverify responses whose `hostname`
+	 * does not match this value. Defends against cross-site token replay.
+	 * Leave empty to accept any hostname (default; for multi-site deployments).
+	 */
+	EXPECTED_HOSTNAME?: string;
 }
 
 /**
@@ -65,7 +71,8 @@ export type ErrorCode =
 	| 'missing-token'
 	| 'invalid-content-type'
 	| 'upstream-unreachable'
-	| 'upstream-timeout';
+	| 'upstream-timeout'
+	| 'hostname-mismatch';
 
 /**
  * Structured log emitted per siteverify call.

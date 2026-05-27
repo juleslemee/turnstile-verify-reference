@@ -48,6 +48,17 @@ export async function validate(req: SiteverifyRequest, env: Env, workerVersion: 
 					duration_ms: durationMs,
 					worker_version: workerVersion,
 				};
+				// Hostname-mismatch defense. If the customer set EXPECTED_HOSTNAME,
+				// reject responses whose hostname doesn't match — defends against
+				// cross-site token replay even if a token leaks.
+				if (data.success && env.EXPECTED_HOSTNAME && data.hostname && data.hostname !== env.EXPECTED_HOSTNAME) {
+					const rejected: SiteverifyResponse = {
+						...data,
+						success: false,
+						'error-codes': ['hostname-mismatch'],
+					};
+					return { response: rejected, upstreamStatus: result.status, durationMs };
+				}
 				return { response: data, upstreamStatus: result.status, durationMs };
 			}
 			if (!RETRY_ON_STATUSES.has(result.status) || attempt === 1) {

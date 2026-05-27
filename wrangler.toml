@@ -21,6 +21,12 @@ ALLOWED_ORIGIN = "*"
 # Empty string = no default cdata behavior; the customer's widget controls cdata.
 DEFAULT_CDATA = ""
 
+# Optional: defense against cross-site token replay. If set, the Worker
+# rejects siteverify responses whose hostname doesn't match. Set this to
+# your customer-facing domain (e.g. "www.example.com") for additional safety
+# on single-domain deployments. Leave empty for multi-site deployments.
+# EXPECTED_HOSTNAME = ""
+
 # Secrets — never commit. Set via:
 #   wrangler secret put TURNSTILE_SECRET_KEY
 # For local dev, create .dev.vars (gitignored) with:
