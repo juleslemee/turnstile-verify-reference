@@ -2,7 +2,7 @@
 
 > Open-source, production-ready reference implementation of Cloudflare Turnstile server-side validation, built entirely on Workers.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/turnstile-verify-reference)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/juleslemee/turnstile-verify-reference)
 
 This Worker is the canonical "Turnstile siteverify done right" example. It's safe to deploy as-is into any Cloudflare account; the only thing you need to set after deploy is the `TURNSTILE_SECRET_KEY` secret. It powers the **Magic Turnstile** activation experience: customers either click Deploy above to one-click-install it, or have an AI agent install it as part of a wider Turnstile setup. Both paths produce the same correctly-wired result.
 
